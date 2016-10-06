@@ -1,0 +1,193 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#define SERVER_PORT
+#define MAX_MSG 100
+
+int main(int argc, char *argv[])
+{
+	int sd, rc, i;
+	char sendMsg[MAX_MSG];
+	struct sockaddr_in localAddr, servAddr;
+	struct hostnet *h;
+	
+	if( argc < 3)
+	{
+		printf("usage: %s <server> <port#> <data>\n", argv[0])
+		printf(" or : %s <server> <data>\n", argv[0]);
+		exit(1);
+	}
+	
+	h = gethostname(argv[1]);        // define a space to store the current hostname
+
+   // Get the hostname using the gethostname function
+
+	
+    if (gethostname(&hostname, MAX_MSG) < 0) {
+
+    printf("%s: cannot get the local hostname \n",argv[0]);
+
+    exit(1);
+
+    }
+	
+	servAddr.sin_family = h->h_addrtype;
+	memcpy((char *) &servAddr.sin_addr.s_addr, h->h_addr_list[0], h->h_length);
+	if (argc == 4) servAddr.sin_port = htons(atoi(argv[2]));
+	else servAddr.sin_port = htons(SERVER_PORT);
+	
+	//create socket
+	sd = socket(AF_INET, SOCK_STREAM, 0);
+	if(sd < 0)
+	{
+		perror("cannot open socket");
+		exit(1);
+	}
+	
+	//connect to server
+	rc = connect(sd, (strcut sockaddr *) &servAddr, sizeof(servAddr));
+
+    // compose the HELO message
+
+    sprintf(sendMsg, "HELO %s\r\n", hostname);
+  
+    // Send the HELO message
+    rc = send(sd, sendMsg, strlen(sendMsg), 0);
+    if(rc<0) {
+      perror("cannot send data ");
+      close(sd);
+      exit(1);
+    }
+
+
+    // Receive a response from the server
+    memset(recvMsg,0x0,MAX_MSG);
+    recvLen = recv(sd, recvMsg, MAX_MSG, 0); /* wait for data */
+    if (recvLen<0) {
+        perror("cannot receive data ");
+        return 1;
+    }
+ 
+    // Get the status code
+    sscanf(recvMsg, "%d", &recvStatus);
+    if (recvStatus != 250) {
+        printf("HELO message is wrong\n");
+        exit(0);
+		
+	}
+    // compose the MAIL FROM message
+	scanf("%s", email);
+    sprintf(sendMsg, "MAIL FROM <%s\r\n>", email);
+  
+    // Send the MAIL FROM message
+    rc = send(sd, sendMsg, strlen(sendMsg), 0);
+    if(rc<0) {
+      perror("cannot send data ");
+      close(sd);
+      exit(1);
+    }
+
+ 
+    // Receive a response from the server
+    memset(recvMsg,0x0,MAX_MSG);
+    recvLen = recv(sd, recvMsg, MAX_MSG, 0); /* wait for data */
+    if (recvLen<0) {
+        perror("cannot receive data ");
+        return 1;
+    }
+ 
+    // Get the status code
+    sscanf(recvMsg, "%d", &recvStatus);
+    if (recvStatus != 250) {
+        printf("MAIL FROM message is wrong\n");
+        exit(0);
+    }
+ 
+	// compose the RCPT TO message
+	scanf("%s", email);
+    sprintf(sendMsg, "RCPT TO <%s\r\n>", email);
+  
+    // Send the RCPT TO message
+    rc = send(sd, sendMsg, strlen(sendMsg), 0);
+    if(rc<0) {
+      perror("cannot send data ");
+      close(sd);
+      exit(1);
+    }
+
+
+    // Receive a response from the server
+    memset(recvMsg,0x0,MAX_MSG);
+    recvLen = recv(sd, recvMsg, MAX_MSG, 0); /* wait for data */
+    if (recvLen<0) {
+        perror("cannot receive data ");
+        return 1;
+    }
+ 
+    // Get the status code
+    sscanf(recvMsg, "%d", &recvStatus);
+    if (recvStatus != 250) {
+        printf("RCPT TO message is wrong\n");
+        exit(0);
+	}
+	// compose the DATA message
+
+	message = "DATA";
+	sprintf(sendMsg, "%s", message);
+  
+    // Send the DATA message
+    rc = send(sd, sendMsg, strlen(sendMsg), 0);
+    if(rc<0) {
+      perror("cannot send data ");
+      close(sd);
+      exit(1);
+	}
+
+
+    // Receive a response from the server
+    memset(recvMsg,0x0,MAX_MSG);
+    recvLen = recv(sd, recvMsg, MAX_MSG, 0); /* wait for data */
+    if (recvLen<0) {
+        perror("cannot receive data ");
+        return 1;
+	}
+ 
+    // Get the status code
+    sscanf(recvMsg, "%d", &recvStatus);
+    if (recvStatus != 354) {
+        printf("DATA message is wrong\n");
+        exit(0);
+	}
+	
+	printf("Enter your message now\n");
+	do
+	{
+		scanf("%s", message);
+		rc = send(sd, message, strlen(message), 0);
+		
+		if(message != ".")
+			printf("sending message: %s", message);
+	} while(message != ".")
+	
+	
+	memset(recvMsg,0x0,MAX_MSG);
+    recvLen = recv(sd, recvMsg, MAX_MSG, 0); /* wait for data */
+    if (recvLen<0) {
+        perror("cannot receive data ");
+        return 1;
+    }
+ 
+    // Get the status code
+    sscanf(recvMsg, "%d", &recvStatus);
+    if (recvStatus != 250) {
+        printf("message is wrong\n");
+        exit(0);
+	}
+	
+	
+}
